@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: learnEngTab.jsx</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: learnEngTab.jsx</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import { useState, useEffect, useRef } from 'react'
+import '../App.css'
+
+
+/**
+ * The main page for the app
+ * This is where the learning process happens
+ * @param {*} props 
+ * @function randomizeWord Randomizes the word pairs and returns the word in the selected language
+ * @function startLearning Starts the learning process
+ * @function showScore Shows the score page
+ * @function checkAnswer Checks if the answer is correct (inside startLearning)
+ * @returns The home page
+ */
+const Home = (props) => {
+  const inputRef = useRef();
+  const [questionsLeft, setQuestionsLeft] = useState()
+  const [score, setScore] = useState(0)
+  const [selectedOption, setOption] = useState(null)
+  const [selectedLanguage, setLanguage] = useState(null)
+
+  const { engWordPairs = [], sweWordPairs = [] } = props
+
+  /**
+   * Listens to the wordPairs and updates the questionsLeft
+   */
+  useEffect(() => {
+    if(selectedOption === 'English') {
+      setQuestionsLeft(engWordPairs.length)
+    } else {
+      setQuestionsLeft(sweWordPairs.length)
+    }
+
+  }, [engWordPairs], [sweWordPairs])
+  
+
+  /**
+   * Randomizes the word pairs and returns the word in the selected language
+   * @returns {string} The word in the selected language
+   */
+  function randomizeWord(randomizedWordLanguage = null) {
+    const wordPairs = selectedLanguage === 'English' ? engWordPairs : sweWordPairs
+    
+    const randomIndex = Math.floor(Math.random() * wordPairs.length)
+    const word = wordPairs[randomIndex]
+
+    if(selectedLanguage === 'English') {
+
+      if (selectedOption === 'EngFin') {
+        return word.english
+      }
+      if (selectedOption === 'FinEng') {
+        return word.finnish
+      } else {
+        switch (randomizedWordLanguage) {
+          case 'Finnish':
+            return word.finnish
+          case 'English':
+            return word.english
+          default:
+            return "Error"
+        }
+      }
+    } else {
+      if (selectedOption === 'SweFin') {
+        return word.swedish
+      }
+      if (selectedOption === 'FinSwe') {
+        return word.finnish
+      } else {
+        switch (randomizedWordLanguage) {
+          case 'Finnish':
+            return word.finnish
+          case 'Swedish':
+            return word.swedish
+          default:
+            return "Error"
+        }
+      }
+    }
+  }
+
+  /**
+   * Starts the learning process
+   * @returns The ui for the learning page
+  */
+  function startLearning() {
+    function getQuestionHeading() {
+      let word = randomizeWord();
+
+      if (selectedLanguage === 'Swedish') {
+        switch (selectedOption) {
+          case 'SweFin':
+            return { question: 'What is the Finnish word for:', word: word };
+          case 'FinSwe':
+            return { question: 'What is the Swedish word for:', word: word };
+          case 'NoPref':
+            const language = Math.random() &lt; 0.5 ? 'Finnish' : 'Swedish';
+            word = randomizeWord(language);
+            const questionText = language === 'Finnish' ? 'What is the Swedish word for:' : 'What is the Finnish word for:';
+            return { question: questionText, word: word };
+          default:
+            return 'Oops.. Something went wrong';
+        }
+      } else if (selectedLanguage === 'English') {
+        switch (selectedOption) {
+          case 'EngFin':
+            return { question: 'What is the Finnish word for:', word: word };
+          case 'FinEng':
+            return { question: 'What is the English word for:', word: word };
+          case 'NoPref':
+            const language = Math.random() &lt; 0.5 ? 'Finnish' : 'English';
+            word = randomizeWord(language);
+            const questionText = language === 'Finnish' ? 'What is the English word for:' : 'What is the Finnish word for:';
+            return { question: questionText, word: word };
+          default:
+            return 'Oops.. Something went wrong';
+        }
+      }
+      return ''; // Should never reach this
+    }
+    const checkAnswer = () => {
+      const inputValue = String(inputRef.current.value).toLowerCase()
+      const word = document.getElementById('question').textContent
+      
+      if(selectedLanguage === 'English') {
+        const correctAnswer = engWordPairs.find(pair => {
+          if (selectedOption === 'EngFin') {
+            return pair.english === word
+          }
+          if (selectedOption === 'FinEng') {
+            return pair.finnish === word
+          }
+          return pair.english === word || pair.finnish === word
+        })
+        if(!correctAnswer) {
+          return false;
+        }
+        if (selectedOption === 'EngFin') {
+          return correctAnswer.finnish === inputValue
+        }
+        if (selectedOption === 'FinEng') {
+          return correctAnswer.english === inputValue
+        }
+        return correctAnswer.english === inputValue || correctAnswer.finnish === inputValue
+      } else {
+        const correctAnswer = sweWordPairs.find(pair => {
+          if (selectedOption === 'SweFin') {
+            return pair.swedish === word
+          }
+          if (selectedOption === 'FinSwe') {
+            return pair.finnish === word
+          }
+          return pair.swedish === word || pair.finnish === word
+        })
+        if(!correctAnswer) {
+          return false;
+        }
+        if (selectedOption === 'SweFin') {
+          return correctAnswer.finnish === inputValue
+        }
+        if (selectedOption === 'FinSwe') {
+          return correctAnswer.swedish === inputValue
+        }
+        return correctAnswer.swedish === inputValue || correctAnswer.finnish === inputValue
+      }
+    }
+
+    if (questionsLeft === 0) {
+      return showScore()
+    }
+    const wordPairs = selectedLanguage === 'English' ? engWordPairs : sweWordPairs
+    const question = getQuestionHeading();
+
+
+    return &lt;div className='question-container'>
+      &lt;h1>Solve this question🧐&lt;/h1>
+      &lt;ul>
+        &lt;li>
+          &lt;h2>{question.question}&lt;/h2>
+          &lt;h2 id='question'>{question.word}&lt;/h2>
+          &lt;input ref={inputRef} type='text' placeholder='Type your answer here'>&lt;/input>
+          &lt;button onClick={() => {
+            checkAnswer() ? setScore(score + 1) : setScore(score);
+            setQuestionsLeft(questionsLeft - 1);
+            startLearning();
+            inputRef.current.value = ''
+          }}>Next&lt;/button>
+        &lt;/li>
+      &lt;/ul>
+      &lt;h2>Question&lt;/h2>
+      &lt;p>{questionsLeft}/{wordPairs.length}&lt;/p>
+    &lt;/div>
+  }
+  /**
+   * Shows the score page
+   * @returns The score page
+   */
+  function showScore() {
+    // Using the question-container class to style the score page as well
+    // Even though it's not a question
+
+    const wordPairs = selectedLanguage === 'English' ? engWordPairs : sweWordPairs
+    return &lt;div className='question-container'>
+      &lt;h1>Game over!&lt;/h1>
+      &lt;h2>Your score was: {score}/{wordPairs.length}&lt;/h2>
+      &lt;button onClick={() => {
+        setOption(null)
+        setScore(0)
+        setQuestionsLeft(wordPairs.length)
+      }}>Exit&lt;/button>
+    &lt;/div>
+  }
+  if (selectedOption === null) {
+    return ( &lt;div>
+      &lt;h2>Choose the language you want to learn&lt;/h2>
+      &lt;ul id='language-list'>
+        &lt;li style={{listStyleType: 'none'}}>
+          &lt;h2>English&lt;/h2>
+          &lt;button onClick={() => setLanguage('English')}>Select&lt;/button>
+        &lt;/li>
+        &lt;li style={{listStyleType: 'none'}}>
+          &lt;h2>Swedish&lt;/h2>
+          &lt;button onClick={() => setLanguage('Swedish')}>Select&lt;/button>
+        &lt;/li>
+      &lt;/ul>
+
+      {selectedLanguage == 'Swedish' ? &lt;div>
+        &lt;h1>Choose one of the following options:&lt;/h1>
+        &lt;ul id='option-list'>
+          &lt;li>
+            &lt;h2>Learn Finnish To Swedish&lt;/h2>
+            &lt;button onClick={() => setOption('FinSwe')}>Start&lt;/button>
+          &lt;/li>
+          &lt;li>
+            &lt;h2>Learn Swedish To Finnish&lt;/h2>
+            &lt;button onClick={() => setOption('SweFin')}>Start&lt;/button>
+          &lt;/li>
+          &lt;li>
+            &lt;h2>Learn both ways&lt;/h2>
+            &lt;button onClick={() => setOption('NoPref')}>Start&lt;/button>
+          &lt;/li>
+        &lt;/ul>
+      &lt;/div> 
+      : 
+      &lt;div>
+        &lt;h1>Choose one of the following options:&lt;/h1>
+        &lt;ul id='option-list'>
+          &lt;li>
+            &lt;h2>Learn Finnish To English&lt;/h2>
+            &lt;button onClick={() => setOption('FinEng')}>Start&lt;/button>
+          &lt;/li>
+          &lt;li>
+            &lt;h2>Learn English To Finnish&lt;/h2>
+            &lt;button onClick={() => setOption('EngFin')}>Start&lt;/button>
+          &lt;/li>
+          &lt;li>
+            &lt;h2>Learn both ways&lt;/h2>
+            &lt;button onClick={() => setOption('NoPref')}>Start&lt;/button>
+          &lt;/li>
+        &lt;/ul>
+      &lt;/div>
+      }      
+    &lt;/div>
+    )
+  } else {
+    return startLearning()
+  }
+}
+
+export default Home</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#DocTab">DocTab</a></li><li><a href="global.html#checkAnswerChecksiftheansweriscorrectinsidestartLearning">checkAnswer Checks if the answer is correct </a></li><li><a href="global.html#updateWordPair-Updatesawordpairinthedatabase">updateWordPair - Updates a word pair in the database</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Wed Jan 08 2025 17:09:22 GMT+0200 (Itä-Euroopan normaaliaika)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

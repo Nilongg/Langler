@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: adminTab.jsx</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: adminTab.jsx</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import { useState, useEffect, useRef } from 'react'
+import '../App.css'
+
+/**
+   * The admin tab
+   * includes functions to add, delete and update word pairs
+   * @param {Array} engWordPairs - The english word pairs fetched from the database
+   * @param {Array} sweWordPairs - The swedish word pairs fetched from the database
+   * @param {Function} setEngWordPairs - The function to set the word pairs for english
+   * @param {Function} setSweWordPairs - The function to set the word pairs for swedish
+   * @function deleteWordPair - Deletes a word pair from the database
+   * @function addWordPair - Adds a new word pair to the database
+   * @function updateWordPair - Updates a word pair in the database
+   * @returns The admin tab
+   */
+const AdminTab = (props) => {
+  const { engWordPairs = [], sweWordPairs = [], setEngWordPairs, setSweWordPairs } = props
+  const [ language, setLanguage ] = useState('english')
+
+  /**
+   * Deletes a word pair from the database using input field's value
+   */
+  const deleteWordPair = async () => {
+    const id = document.querySelector('#idToDelete').value
+    const url = language === 'english' ? `/api/languages/english` : `/api/languages/swedish`
+    // Delete the word pair with the given id
+    const response = await fetch(url + `/${id}`, {
+      method: 'DELETE'
+    })
+    if (response.status === 200) {
+      const response = await fetch(url);
+      const data = await response.json();
+      if(language === 'english') {
+        setEngWordPairs(data)
+      } else {
+        setSweWordPairs(data)
+      }
+    } else {
+      alert('Please provide the id of the word pair you want to delete')
+    }
+  }
+  /**
+   * Adds a new word pair to the database by using fetch api using input field's value
+   */
+  const addWordPair = async () => {
+    const finnish = String(document.querySelector('#finWord').value).toLowerCase()
+    const foreign = String(document.querySelector('#foreignWord').value).toLowerCase()
+    const url = language === 'english' ? `/api/languages/english` : `/api/languages/swedish`
+    const body = language === 'english' ? { finnish: finnish, english: foreign } : { finnish: finnish, swedish: foreign }
+    // Add a new word pair
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
+    })
+    if (response.status === 201) {
+      const response = await fetch(url);
+      const data = await response.json();
+      if(language === 'english') {
+        setEngWordPairs(data)
+      } else {
+        setSweWordPairs(data)
+      }
+    } else {
+      alert('Please provide the words for the word pair')
+    }
+  }
+
+  /**
+   * Updates a word pair in the database by using fetch api using input field's value
+   * If only one of the words is given, update only that word
+   */
+  const updateWordPair = async () => {
+    const id = document.querySelector('#oldPID').value
+    const finnish = String(document.querySelector('#newFi').value).toLowerCase()
+    const foreign = String(document.querySelector('#newForeign').value).toLowerCase()
+    const url = language === 'english' ? `/api/languages/english/${id}` : `/api/languages/swedish/${id}`
+
+    if (id === undefined || id === '' || id === null) {
+      alert('Please provide the id of the word pair you want to update')
+      return
+    }
+
+    // If only one of the words is given, update only that word
+    if (finnish === '' || foreign === '') {
+      if (finnish === '') {
+        // Update the word pair with the given id using fetch and the PATCH method        
+        const body = language === 'english' ? { english: foreign } : { swedish: foreign }
+
+        const response = await fetch(url, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(body)
+        })
+        if (response.status === 200) {
+          // Fetch the updated data and set the state 
+          const data = await fetch(url);
+          const pairs = await data.json();
+          if(language === 'english') {
+            setEngWordPairs(pairs)
+          } else {
+            setSweWordPairs(pairs)
+          }
+        } else {
+          alert('Please provide the new words for the word pair')
+        }
+
+      } else {
+        // Update the word pair with the given id using fetch and the PATCH method
+        const response = await fetch(url, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ finnish: finnish })
+        })
+        if (response.status === 200) {
+          const data = await fetch(url);
+          const pairs = await data.json();
+          if(language === 'english') {
+            setEngWordPairs(pairs)
+          } else {
+            setSweWordPairs(pairs)
+          }
+        } else {
+          alert('Please provide the new words for the word pair')
+        }
+      }
+    } else if (finnish !== '' &amp;&amp; foreign !== '') {
+      // Update the word pair with the given id using fetch and the PUT method
+      const body = language === 'english' ? { finnish: finnish, english: foreign } : { finnish: finnish, swedish: foreign }
+
+      const response = await fetch(url, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body)
+      })
+      if (response.status === 200) {
+        const data = await fetch(url);
+        const pairs = await data.json();
+        if(language === 'english') {
+          setEngWordPairs(pairs)
+        } else {
+          setSweWordPairs(pairs)
+        }
+      }
+    } else {
+      alert('Please provide the new words for the word pair')
+    }
+  }
+
+  return ( 
+    &lt;div>
+      &lt;h1>Welcome to the control panel🔧&lt;/h1>
+      &lt;p>Select language to update pairs&lt;/p>
+      &lt;select id='language' onChange={(e) => setLanguage(e.target.value)}>
+        &lt;option value='english'>English&lt;/option>
+        &lt;option value='swedish'>Swedish&lt;/option>
+      &lt;/select>
+      &lt;div>
+        &lt;h3>All word pairs&lt;/h3>
+        &lt;ul id='words_a'>
+          {/* Safeguard against empty arrays */ }
+          {Array.isArray(language === 'swedish' ? sweWordPairs : engWordPairs)
+            ? (language === 'swedish'
+              ? sweWordPairs.map(pair => &lt;li key={pair.id}>id: {pair.id} | {pair.finnish} - {pair.swedish}&lt;/li>)
+              : engWordPairs.map(pair => &lt;li key={pair.id}>id: {pair.id} | {pair.finnish} - {pair.english}&lt;/li>)
+            )
+            : &lt;p>No word pairs available&lt;/p>
+          }
+        &lt;/ul>
+      &lt;/div>
+      &lt;div>
+        &lt;h3>Add a new word pair&lt;/h3>
+        &lt;input id='finWord' type='text' placeholder='Finnish word'>&lt;/input>
+        &lt;input 
+          id='foreignWord' 
+          type='text' 
+          placeholder={language == 'english' ? 'English word' : 'Swedish word'}>
+        &lt;/input>
+        &lt;button onClick={addWordPair}>Add&lt;/button>
+      &lt;/div>
+      &lt;div>
+        &lt;h3>Delete a word pair by id&lt;/h3>
+        &lt;input id='idToDelete' type='text' placeholder='id'>&lt;/input>
+        &lt;button onClick={deleteWordPair}>Delete&lt;/button>
+      &lt;/div>
+      &lt;div>
+        &lt;h3>Update a word pair&lt;/h3>
+        &lt;input id='oldPID' type='text' placeholder='Old pair ID'>&lt;/input>
+        &lt;input id='newFi' type='text' placeholder='New Finnish word'>&lt;/input>
+        &lt;input 
+          id='newForeign' 
+          type='text' 
+          placeholder={language == 'english' ? 'New English word' : 'New Swedish word'}>
+        &lt;/input>
+        &lt;button onClick={updateWordPair}>Update&lt;/button>
+      &lt;/div>
+    &lt;/div>
+  )
+}
+
+export default AdminTab;</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#DocTab">DocTab</a></li><li><a href="global.html#checkAnswerChecksiftheansweriscorrectinsidestartLearning">checkAnswer Checks if the answer is correct </a></li><li><a href="global.html#updateWordPair-Updatesawordpairinthedatabase">updateWordPair - Updates a word pair in the database</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Wed Jan 08 2025 17:09:22 GMT+0200 (Itä-Euroopan normaaliaika)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: engDb.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: engDb.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>const sqlite3 = require('sqlite3').verbose();
+const db = new sqlite3.Database(":memory:");
+
+/**
+ * Initializes the database with a table and some initial data
+ * @returns {void}
+ */
+function initialize() {
+  db.serialize(() => {
+    db.run('CREATE TABLE IF NOT EXISTS EngFinPairs (id INTEGER PRIMARY KEY AUTOINCREMENT, finnish VARCHAR(255), english VARCHAR(255))', (err) => {
+      if (err) {
+        console.log(err);
+      } else {
+        console.log('Table created');
+        // Add some initial data
+        db.run('INSERT INTO EngFinPairs (finnish, english) VALUES (?, ?)', ['kissa', 'cat']);
+        db.run('INSERT INTO EngFinPairs (finnish, english) VALUES (?, ?)', ['koira', 'dog']);
+        db.run('INSERT INTO EngFinPairs (finnish, english) VALUES (?, ?)', ['hevonen', 'horse']);
+        db.run('INSERT INTO EngFinPairs (finnish, english) VALUES (?, ?)', ['lehmä', 'cow']);
+        db.run('INSERT INTO EngFinPairs (finnish, english) VALUES (?, ?)', ['sika', 'pig']);
+        db.run('INSERT INTO EngFinPairs (finnish, english) VALUES (?, ?)', ['lammas', 'sheep']);
+        db.run('INSERT INTO EngFinPairs (finnish, english) VALUES (?, ?)', ['vuohi', 'goat']);
+        db.run('INSERT INTO EngFinPairs (finnish, english) VALUES (?, ?)', ['kana', 'chicken']);
+        db.run('INSERT INTO EngFinPairs (finnish, english) VALUES (?, ?)', ['ankka', 'duck']);
+        db.run('INSERT INTO EngFinPairs (finnish, english) VALUES (?, ?)', ['kalkkuna', 'turkey']);
+        initialized = true;
+      }
+    });
+  });
+}
+
+/**
+ * Saves a new word pair to the database
+ * @param {string} fin_word Finnish word
+ * @param {string} eng_word English word
+ * @returns {Promise&lt;void>}
+ * @throws {Error} If the database operation fails
+ * @throws {Error} If no data is provided
+ */
+function save(fin_word, eng_word) {
+  return new Promise((resolve, reject) => {
+    db.run('INSERT INTO EngFinPairs (finnish, english) VALUES (?, ?)', [fin_word, eng_word], (err) => {
+      if (err) {
+        reject({ error: err.message, status: 500 });
+      } else {
+        resolve();
+      }
+    });
+  });
+}
+
+/**
+ * Retrieves a word pair from the database by its ID
+ * @param {number} id Word pair ID
+ * @returns {Promise&lt;{id: number, finnish: string, english: string}>}
+ */
+function get(id) {
+  return new Promise((resolve, reject) => {
+    db.get('SELECT * FROM EngFinPairs WHERE id = ?', [id], (err, row) => {
+      if (!row) {
+        reject({ error: 'No word pair found with the provided ID', status: 404 });
+      }
+      if (err) {
+        reject({ error: err.message, status: 500 });
+      } else {
+        resolve(row);
+      }
+    });
+  });
+}
+
+/**
+ * Retrieves all word pairs from the database
+ * @returns {Promise&lt;{id: number, finnish: string, english: string}[]>}
+ * @throws { Error } If the database operation fails
+ * @throws { Error } If no data is provided
+*/
+function getAll() {
+  return new Promise((resolve, reject) => {
+    db.all('SELECT * FROM EngFinPairs', (err, rows) => {
+      if (rows.length === 0) {
+        reject({ error: 'No word pairs found', status: 404 });
+      }
+      if (err) {
+        reject({ error: err.message, status: 500 });
+      } else {
+        resolve(rows);
+      }
+    });
+  });
+}
+
+/**
+ * Updates a word pair in the database
+ * @param {number} id Word pair ID
+ * @param {string} fin_word Finnish word
+ * @param {string} eng_word English word
+ * @returns {Promise&lt;void>}
+ * @throws {Error} If the database operation fails
+ * @throws {Error} If no data is provided
+ */
+function update(id, fin_word, eng_word) {
+  return new Promise((resolve, reject) => {
+    if (!fin_word &amp;&amp; !eng_word) {
+      reject({ error: 'No data provided', status: 400 });
+    }
+    if (!fin_word) {
+      db.run('UPDATE EngFinPairs SET english = ? WHERE id = ?', [eng_word, id], function (err) {
+        if (this.changes === 0) {
+          reject({ error: 'No word pair found with the provided ID', status: 404 });
+        }
+        if (err) {
+          reject({ error: err.message, status: 500 });
+        } else {
+          resolve();
+        }
+      });
+    } else if (!eng_word) {
+      db.run('UPDATE EngFinPairs SET finnish = ? WHERE id = ?', [fin_word, id], function (err) {
+        if (this.changes === 0) {
+          reject({ error: 'No word pair found with the provided ID', status: 404 });
+        }
+        if (err) {
+          reject({ error: err.message, status: 500 });
+        } else {
+          resolve();
+        }
+      });
+    } else {
+      db.run('UPDATE EngFinPairs SET finnish = ?, english = ? WHERE id = ?', [fin_word, eng_word, id], function (err) {
+        if (this.changes === 0) {
+          reject({ error: 'No word pair found with the provided ID', status: 404 });
+        }
+        if (err) {
+          reject({ error: err.message, status: 500 });
+        } else {
+          resolve();
+        }
+      });
+    }
+  });
+}
+
+/**
+ * Deletes a word pair from the database
+ * @param {number} id Word pair ID
+ * @returns {Promise&lt;void>}
+ * @throws {Error} If the database operation fails
+ */
+function deletePair(id) {
+  return new Promise((resolve, reject) => {
+    db.run('DELETE FROM EngFinPairs WHERE id = ?', [id], function (err) {
+      if (this.changes === 0) {
+        reject({ error: 'No word pair found with the provided ID', status: 404 });
+      }
+      if (err) {
+        reject({ error: err.message, status: 500 });
+      } else {
+        resolve();
+      }
+    });
+  });
+}
+
+initialize();
+
+module.exports = { save, getAll, update, deletePair, get };</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#deletePair">deletePair</a></li><li><a href="global.html#get">get</a></li><li><a href="global.html#getAll">getAll</a></li><li><a href="global.html#initialize">initialize</a></li><li><a href="global.html#save">save</a></li><li><a href="global.html#update">update</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Wed Jan 08 2025 17:24:38 GMT+0200 (Itä-Euroopan normaaliaika)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
